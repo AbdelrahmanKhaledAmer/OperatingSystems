@@ -148,7 +148,6 @@ int main()
 
         }else if(validCommand("dir\0",line)){
             interrupt(0x21, 2, buffer, 2, 0);
-            interrupt(0x21, 0,buffer, 0, 0);
             //Handle the buffer
             i=0;
             while(i<512){
