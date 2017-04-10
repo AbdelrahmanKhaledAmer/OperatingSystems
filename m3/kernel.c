@@ -10,6 +10,8 @@ void executeProgram(char*, int);
 void terminate();
 void deleteFile(char*);
 void writeFile(char*,char*,int);
+void handleTimerInterrupt(int , int);
+void returnFromTimer(int, int);
 
 int main()
 {
@@ -34,7 +36,7 @@ int main()
 	interrupt(0x21, 4, "tstpr2\0", 0x2000, 0);
 	printString("u shouldnt be here\0: \0");
 	while(1);*/
-
+        makeTimerInterrupt();
 	makeInterrupt21();
 	interrupt(0x21, 4, "shell\0", 0x2000, 0);
 	terminate();
@@ -416,4 +418,14 @@ void writeFile(char* name, char* buffer, int secNum)
 
     writeSector(map,1);
     writeSector(dir,2); 
+}
+
+void handleTimerInterrupt(int segment, int sp){
+        char tic [4];
+        tic[0] = 't';
+	tic[1] = 'i';
+	tic[2] ='c';
+	tic[3] = 0;
+	printString(tic);
+	returnFromTimer(segment,sp);
 }
