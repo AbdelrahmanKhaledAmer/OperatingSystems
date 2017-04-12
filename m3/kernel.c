@@ -6,84 +6,30 @@ int mod(int, int);
 void readSector(char*, int);
 void writeSector(char*, int);
 void readFile(char*, char*);
-void executeProgram(char*, int);
+void executeProgram(char*);
 void terminate();
 void deleteFile(char*);
 void writeFile(char*,char*,int);
 void handleTimerInterrupt(int , int);
-void returnFromTimer(int, int);
-
+int active[8];
+int stack_pointers[8];
+int currentProcess;
 int main()
 {
-    /*int i=0;
-	char buffer1[13312];
-	char buffer2[13312];
-	buffer2[0]='h';
-    buffer2[1]='e';
-	buffer2[2]='l';
-	buffer2[3]='l';
-	buffer2[4]='o';
-	for(i=5; i<13312; i++)
-	{
-		buffer2[i]=0x0;
+        int i = 0;
+        for(i=0;i<8;i++){
+		
+		active[i]=0;
+		stack_pointers[i]= 0xff00;
 	}
+        currentProcess =0;
 	makeInterrupt21();
-	interrupt(0x21,8, "testW\0", buffer2, 1); //write file testW
-	interrupt(0x21,3, "testW\0", buffer1, 0); //read file testW
-	interrupt(0x21,0, buffer1, 0, 0); // print out contents of testW*/
-
-	/*makeInterrupt21();
-	interrupt(0x21, 4, "tstpr2\0", 0x2000, 0);
-	printString("u shouldnt be here\0: \0");
-	while(1);*/
-        makeTimerInterrupt();
-	makeInterrupt21();
-	interrupt(0x21, 4, "shell\0", 0x2000, 0);
+	makeTimerInterrupt();
+        interrupt(0x21, 4, "shell\0", 0x2000, 0);
 	terminate();
 	while(1);
 
-	/*
-    char buffer[13312];
-	makeInterrupt21();
-	interrupt(0x21, 7, "messag\0", 0, 0); //delete messag
-	interrupt(0x21, 3, "messag\0", buffer, 0); // try to read messag
-	interrupt(0x21, 0, buffer, 0, 0); //print out the contents of buffer
-	*/
 	
-	//TEST CODE FOR writeSector
-
-	/*char buffer[512];
-	char map[512];
-	readSector(map, 1);
-	buffer[0] = 't';
-	buffer[1] = 'r';
-	writeSector(buffer, 50);
-	map[40] = 0xFF;
-	writeSector(map, 1);
-	readSector(buffer, 50);
-	printString(buffer);*/
-
-    
-    /*char line[80];
-  	makeInterrupt21();
-    interrupt(0x21,1,line,0,0);
-  	interrupt(0x21,0,line,0,0);*/
-
-    /*char buffer[512];
-  	readSector(buffer, 30);
- 	printString(buffer);*/
-
-	/*char line[80];
-	printString("Enter a line: \0");
-	readString(line);
-	printString(line);*/
-        
-	/*int a =0;
-	a = mod(18,10);
-	if(a == 8)
-	interrupt(0x10,0xE*256+'T',0,0,0);
-	else
-	interrupt(0x10,0xE*256+'F',0,0,0);*/
    
 	while(1);
 	return 0;
@@ -245,13 +191,26 @@ void readFile(char* fileName, char* buffer)
 	}  
 }
 
-void executeProgram(char* name, int segment)
+void executeProgram(char* name)
 {
 	int i = 0;
+        int index = 0;
+        int segment = 0;
 	char buffer[13312];
 	readFile(name,buffer);
+        
+	for(index = 0; index < 8; index++)
+   		if(active[index] == 0)          
+   			break;
+	
+	segment = (index* 0x1000) + 0x2000;
 
-	while(i<13312)
+        if(index == 8){
+          printString("no available space in the process table\0");
+          while(1);
+        }
+       
+	 while(i<13312)
 	{
 		putInMemory(segment,i,buffer[i]);
 		i++;
@@ -421,11 +380,6 @@ void writeFile(char* name, char* buffer, int secNum)
 }
 
 void handleTimerInterrupt(int segment, int sp){
-        char tic [4];
-        tic[0] = 't';
-	tic[1] = 'i';
-	tic[2] ='c';
-	tic[3] = 0;
-	printString(tic);
+      
 	returnFromTimer(segment,sp);
 }
