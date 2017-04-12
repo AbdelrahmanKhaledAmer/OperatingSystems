@@ -200,8 +200,11 @@ void executeProgram(char* name)
 	readFile(name,buffer);
         
 	for(index = 0; index < 8; index++)
-   		if(active[index] == 0)          
-   			break;
+   		if(active[index] == 0){          
+   	              acive[index] = 1;	
+                      break;
+
+             }
 	
 	segment = (index* 0x1000) + 0x2000;
 
