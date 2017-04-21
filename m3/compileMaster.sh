@@ -7,10 +7,10 @@ dd if=dir.img of=floppya.img bs=512 count=1 seek=2 conv=notrunc
 bcc -ansi -c -o shell.o shell.c
 as86 lib.asm -o lib.o
 ld86 -o shell -d shell.o lib.o
-./loadFile h.txt
-./loadFile hh.txt
 ./loadFile message.txt
 ./loadFile tstprg
+./loadFile hello1
+./loadFile hello2
 ./loadFile tstpr2
 ./loadFile shell
-
+./loadFile phello

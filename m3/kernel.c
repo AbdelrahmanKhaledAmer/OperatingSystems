@@ -14,23 +14,28 @@ void handleTimerInterrupt(int , int);
 int active[8];
 int stack_pointers[8];
 int currentProcess;
+int handleTimerInterrupt_counter;
 int main()
 {
         int i = 0;
-        for(i=0;i<8;i++){
-		
+    for(i=0;i<8;i++){
+
 		active[i]=0;
 		stack_pointers[i]= 0xff00;
 	}
-        currentProcess =0;
+    currentProcess =0;
+    handleTimerInterrupt_counter=1;
 	makeInterrupt21();
 	makeTimerInterrupt();
-        interrupt(0x21, 4, "shell\0", 0x2000, 0);
+    interrupt(0x21, 4, "shell\0", 0x2000, 0);
+
+	//interrupt(0x21, 4, "hello1\0", 0, 0);
+	//interrupt(0x21, 4, "hello2\0", 0, 0);
 	terminate();
 	while(1);
 
-	
-   
+
+
 	while(1);
 	return 0;
 }
@@ -57,7 +62,7 @@ void readString(char* line)
 {
     int i =0;
    	char in = 0x0;
-	
+
    	while( in != 0xd)
 	{
 		in = interrupt(0x16,0,0,0,0);
@@ -106,16 +111,16 @@ void handleInterrupt21(int ax, char* bx, int cx, int dx)
 	else if(ax == 7)
 		deleteFile(bx);
 	else if(ax == 8)
-		writeFile(bx,cx,dx); 
+		writeFile(bx,cx,dx);
     else
        	printString("error \0");
 }
 
 void readSector(char* buffer,int sector)
 {
-    int relative_sector = 0; 
+    int relative_sector = 0;
     int head = 0;
-    int track = 0; 
+    int track = 0;
     relative_sector = mod(sector,18) + 1;
     head = mod(div(sector,18),2);
     track = div(sector,36);
@@ -124,7 +129,7 @@ void readSector(char* buffer,int sector)
 
 void writeSector(char* buffer,int sector)
 {
-    int relative_sector = 0; 
+    int relative_sector = 0;
     int head = 0;
     int track = 0;
     relative_sector = mod(sector,18) + 1;
@@ -158,7 +163,7 @@ void readFile(char* fileName, char* buffer)
             }
             j++;
         }
-                 
+
         if(  j == 6)
         {
 
@@ -188,7 +193,7 @@ void readFile(char* fileName, char* buffer)
 		printString(not);
 		//interrupt(0x10,0xE*256+'\n',0,0,0);
 		terminate();
-	}  
+	}
 }
 
 void executeProgram(char* name)
@@ -198,40 +203,35 @@ void executeProgram(char* name)
         int segment = 0;
 	char buffer[13312];
 	readFile(name,buffer);
-        
+    setKernelDataSegment();
 	for(index = 0; index < 8; index++)
-   		if(active[index] == 0){          
-   	              acive[index] = 1;	
+   		if(active[index] == 0){
+   	              active[index] = 1;
                       break;
 
              }
-	
-	segment = (index* 0x1000) + 0x2000;
 
+	segment = (index* 0x1000) + 0x2000;
+	restoreDataSegment();
         if(index == 8){
           printString("no available space in the process table\0");
           while(1);
         }
-       
 	 while(i<13312)
 	{
 		putInMemory(segment,i,buffer[i]);
 		i++;
 	}
 
-	launchProgram(segment);
+	initializeProgram(segment);
 }
 
 void terminate()
 {
-	char shell[6];
-    shell[0] = 's';
-    shell[1] = 'h';
-    shell[2] = 'e';
-    shell[3] = 'l';
-    shell[4] = 'l';
-    shell[5] = 0x0;
-    interrupt(0x21,4,shell,0x2000,0);
+	 setKernelDataSegment();
+
+	active[currentProcess-1]=0;
+	while(1);
 }
 
 void deleteFile(char* name)
@@ -264,7 +264,7 @@ void deleteFile(char* name)
 		 	i+=31;
 		}
 	}
-    
+
 	if(i==512)
 	{
 		//printString("\nfile not found!\n\0");
@@ -303,7 +303,7 @@ void writeFile(char* name, char* buffer, int secNum)
     int entry_name = 0;
     int entry_sectors = 0;
     int sectors_num = 0;
-    char error [5]; 
+    char error [5];
     char map[512];
     char dir[512];
     char tmp [512];
@@ -311,11 +311,11 @@ void writeFile(char* name, char* buffer, int secNum)
     error[1] = 'R';
     error[2] = 'R';
     error[3] = '\n';
-    error[4] = 0;          
+    error[4] = 0;
 
     readSector(map,1);    // reading both dir and map sectors
-    readSector(dir,2);  
-          
+    readSector(dir,2);
+
     for (i=0; i<512; i=i+32) // finding an empty entry in dir
 	{
 		if (dir[i]==0)
@@ -328,10 +328,10 @@ void writeFile(char* name, char* buffer, int secNum)
 		printString(error);
 		terminate();
 	}
-	
+
 	entry_name = i;
-    entry_sectors = i+6; 
-    for( i =0 ; i < 32; i++) 
+    entry_sectors = i+6;
+    for( i =0 ; i < 32; i++)
     {
 		dir[entry_name+i] = 0x00;
 	}
@@ -343,7 +343,7 @@ void writeFile(char* name, char* buffer, int secNum)
 			printString(error);
 			terminate();
 		}
-                 
+
 		for (i=0; i<512; i++)   // checking if there still emprt sectors in map
 		{
 			if (map[i]==0)
@@ -351,7 +351,7 @@ void writeFile(char* name, char* buffer, int secNum)
 				break;
 			}
 		}
-		
+
 		if (i== 512)
 		{
 			printString(error);
@@ -361,14 +361,14 @@ void writeFile(char* name, char* buffer, int secNum)
         {
 			tmp[k-j*512] = buffer[k];
 		}
-		
+
 		writeSector(tmp,i);
 		map[i]=0xFF;
 		dir[entry_sectors]=i;
 		sectors_num++;
 		entry_sectors++;
 	}
-                                       
+
  	for (i=0; i<6; i++)   	//putting the name
 	{
 		if( name[i]==0)
@@ -379,10 +379,35 @@ void writeFile(char* name, char* buffer, int secNum)
 	}
 
     writeSector(map,1);
-    writeSector(dir,2); 
+    writeSector(dir,2);
 }
 
 void handleTimerInterrupt(int segment, int sp){
-      
+
+    int nextProcess = currentProcess+1;
+	  handleTimerInterrupt_counter++;
+	  if(handleTimerInterrupt_counter>100)
+		 {
+		     if(nextProcess>8)
+			      nextProcess=1;
+		     while(nextProcess!=currentProcess)
+		       {
+
+
+			          if(active[nextProcess-1]==1){
+				              stack_pointers[currentProcess-1] = sp;
+				              segment = ((nextProcess-1)+2)* 0x1000;
+				              sp = stack_pointers[nextProcess-1];
+				              currentProcess = nextProcess;
+                      break;
+			            }
+			           nextProcess++;
+			           if(nextProcess>8)
+				             nextProcess=1;
+		         }
+
+		       handleTimerInterrupt_counter=1;
+	    }
+
 	returnFromTimer(segment,sp);
 }
