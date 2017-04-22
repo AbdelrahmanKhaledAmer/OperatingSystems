@@ -13,16 +13,22 @@ int main()
         char parameter[7];                 //Buffer to hold fileName
         char parameter2[7];
         char line[80];                     //Buffer to hold command entered
-       
+
         // next 2 attributes for dir listing command
-        
-        char file_name[7];                 // file name 
+
+        char file_name[7];                 // file name
         int file_Sector_Count=0;           // number of sector for each file
         char file_Sector_Count_print[3];   // buffer to print the file_Sector_Count
-        char input_file[100];            // buffer for the created file 
-
+        char input_file[100];            // buffer for the created file
+        int kill_value;
         int i = 0;
         int j = 0;
+
+        while(i < 80)
+        {
+            line[i++] = 0x0;
+        }
+          i = 0;
         interrupt(0x21,0,"SHELL>\0",0,0);  //Display prompt
         interrupt(0x21,1,line,0,0);        //Take Input
         interrupt(0x21, 0,"\n\0", 0, 0);
@@ -46,7 +52,7 @@ int main()
         //////////////////////////////////////////////////
         //check if len(parameter)>6 then invalid command//
         //////////////////////////////////////////////////
-        if(validCommand("view \0",line))                
+        if(validCommand("view \0",line))
         {//View file
 
         // handle infinite loop when typing "view \0"
@@ -59,17 +65,17 @@ int main()
                 parameter[i] = line[i+5];
                 i++;
             }
-            
+
             if( i > 6)
             {
-                interrupt(0x21,0," SHELL> file name too large\0",0,0); 
+                interrupt(0x21,0," SHELL> file name too large\0",0,0);
                 interrupt(0x21, 0,"\n\0", 0, 0);
             }else{
                 interrupt(0x21, 3, parameter, buffer, 0);
                 interrupt(0x21, 0, buffer, 0, 0);
             }
         }else if(validCommand("execute \0",line)){//Execute program
-           
+
             if(line[9]==0){
                  interrupt(0x21,0," bad command!\n",0,0);
                  continue;
@@ -82,9 +88,9 @@ int main()
             }
             if( i > 6)
             {
-                interrupt(0x21,0," SHELL> file name too large\n\0",0,0); 
+                interrupt(0x21,0," SHELL> file name too large\n\0",0,0);
                 interrupt(0x21, 0,"\n\0", 0, 0);
-            }else{        
+            }else{
                 interrupt(0x21, 4, parameter, 0x2000, 0);
             }
         }else if(validCommand("delete \0",line)){
@@ -99,7 +105,7 @@ int main()
             }
             if(i > 6)
             {
-                interrupt(0x21,0,"SHELL> file name too large\n\0",0,0); 
+                interrupt(0x21,0,"SHELL> file name too large\n\0",0,0);
                 interrupt(0x21, 0,"\n\0", 0, 0);
             }else{
                 interrupt(0x21, 7, parameter, 0, 0);
@@ -116,7 +122,7 @@ int main()
             }
             if(i > 6)
             {
-                interrupt(0x21,0,"SHELL> First file name too large\n\0",0,0); 
+                interrupt(0x21,0,"SHELL> First file name too large\n\0",0,0);
                 interrupt(0x21, 0,"\n\0", 0, 0);
             }else{
                 i++;
@@ -128,7 +134,7 @@ int main()
                 }
                 if(j > 6)
                 {
-                    interrupt(0x21,0,"SHELL> Second file name too large\n\0",0,0); 
+                    interrupt(0x21,0,"SHELL> Second file name too large\n\0",0,0);
                     interrupt(0x21, 0,"\n\0", 0, 0);
                 }else{
                     interrupt(0x21, 3, parameter, buffer, 0);
@@ -215,10 +221,10 @@ int main()
             }
             if( i > 6)
             {
-                interrupt(0x21,0," SHELL> file name too large\n\0",0,0); 
+                interrupt(0x21,0," SHELL> file name too large\n\0",0,0);
                 interrupt(0x21, 0,"\n\0", 0, 0);
             }else{
-                j = 0;   
+                j = 0;
 
                 while(1)
                 {
@@ -255,7 +261,13 @@ int main()
                 interrupt(0x21, 8, parameter, buffer, j);
             }
 
-        }else{//Unknown command
+        }else if(validCommand("kill \0",line)){
+
+            //handle numbers larger than 8 TODO
+              kill_value=line[5]-'0';
+            interrupt(0x21, 9, parameter, line[5], kill_value);
+        }
+        else{//Unknown command
             interrupt(0x21,0,"Bad Command!\n",0,0);
         }
     }
@@ -303,4 +315,3 @@ int mod(int a,int b)
    	d = div(a,b);
    	return a - ( b * d) ;
 }
-

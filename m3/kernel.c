@@ -11,6 +11,7 @@ void terminate();
 void deleteFile(char*);
 void writeFile(char*,char*,int);
 void handleTimerInterrupt(int , int);
+void killProcess(int);
 int active[8];
 int stack_pointers[8];
 int currentProcess;
@@ -22,18 +23,17 @@ int main()
 
 		active[i]=0;
 		stack_pointers[i]= 0xff00;
-	}
-    currentProcess =0;
-    handleTimerInterrupt_counter=1;
-	makeInterrupt21();
-	makeTimerInterrupt();
-    interrupt(0x21, 4, "shell\0", 0x2000, 0);
+	   }
+      currentProcess =0;
+      handleTimerInterrupt_counter=1;
+	    makeInterrupt21();
+	     makeTimerInterrupt();
+       interrupt(0x21, 4, "shell\0", 0x2000, 0);
 
 	//interrupt(0x21, 4, "hello1\0", 0, 0);
+  //terminateProcess(0);
 	//interrupt(0x21, 4, "hello2\0", 0, 0);
-	terminate();
-	while(1);
-
+	//terminate();
 
 
 	while(1);
@@ -103,7 +103,7 @@ void handleInterrupt21(int ax, char* bx, int cx, int dx)
 	else if(ax == 3)
 		readFile(bx, cx);
 	else if(ax == 4)
-		executeProgram(bx,cx);
+		executeProgram(bx);
 	else if(ax == 5)
 		terminate();
 	else if(ax == 6)
@@ -112,6 +112,8 @@ void handleInterrupt21(int ax, char* bx, int cx, int dx)
 		deleteFile(bx);
 	else if(ax == 8)
 		writeFile(bx,cx,dx);
+    else if(ax == 9)
+    killProcess(dx);
     else
        	printString("error \0");
 }
@@ -192,7 +194,7 @@ void readFile(char* fileName, char* buffer)
 		not[10]=0;
 		printString(not);
 		//interrupt(0x10,0xE*256+'\n',0,0,0);
-		terminate();
+		//terminate();
 	}
 }
 
@@ -207,10 +209,10 @@ void executeProgram(char* name)
 	for(index = 0; index < 8; index++)
    		if(active[index] == 0){
    	              active[index] = 1;
+                  stack_pointers[index]= 0xff00;
                       break;
 
              }
-
 	segment = (index* 0x1000) + 0x2000;
 	restoreDataSegment();
         if(index == 8){
@@ -230,10 +232,19 @@ void terminate()
 {
 	 setKernelDataSegment();
 
-	active[currentProcess-1]=0;
+	active[currentProcess]=0;
 	while(1);
 }
-
+void killProcess(int processNumber)
+{
+  //printString("hello\n");
+  setKernelDataSegment();
+  if(processNumber == currentProcess)
+  currentProcess=0;
+	active[processNumber]=0;
+  restoreDataSegment();
+//  while(1);
+}
 void deleteFile(char* name)
 {
 	int i;
@@ -281,7 +292,7 @@ void deleteFile(char* name)
 		not[10]=0;
 		printString(not);
         //interrupt(0x10,0xE*256+'\n',0,0,0);
-		terminate();
+		//terminate();
 	}else{
 		i += 6;
 		for(j = 0 ; j < 26 && dir[i + j] != 0x00 ; j++)
@@ -326,7 +337,7 @@ void writeFile(char* name, char* buffer, int secNum)
 	if (i==512)
 	{
 		printString(error);
-		terminate();
+		//terminate();
 	}
 
 	entry_name = i;
@@ -341,7 +352,7 @@ void writeFile(char* name, char* buffer, int secNum)
 		if (sectors_num==26)
 		{
 			printString(error);
-			terminate();
+		//	terminate();
 		}
 
 		for (i=0; i<512; i++)   // checking if there still emprt sectors in map
@@ -355,7 +366,7 @@ void writeFile(char* name, char* buffer, int secNum)
 		if (i== 512)
 		{
 			printString(error);
-			terminate();
+			//terminate();
 		}
 		for( k = j*512 ; k < (j*512) + 512 ; k++) // patrtition of data from buffer
         {
