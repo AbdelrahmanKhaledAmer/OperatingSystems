@@ -93,7 +93,7 @@ int main()
             }else{
                 interrupt(0x21, 4, parameter, 0x2000, 0);
             }
-        }else if(validCommand("delete \0",line)){
+        }else if(validCommand("delete \0",line)){//Delete file
              if(line[8]==0){
                  interrupt(0x21,0," bad command!\n",0,0);
                  continue;
@@ -110,7 +110,7 @@ int main()
             }else{
                 interrupt(0x21, 7, parameter, 0, 0);
             }
-        }else if(validCommand("copy \0",line)){
+        }else if(validCommand("copy \0",line)){//Copy file
              if(line[6]==0){
                  interrupt(0x21,0," bad command!\n",0,0);
                  continue;
@@ -152,7 +152,7 @@ int main()
                 }
             }
 
-        }else if(validCommand("dir\0",line)){
+        }else if(validCommand("dir\0",line)){//Show all files
             interrupt(0x21, 2, buffer, 2, 0);
             //Handle the buffer
             i=0;
@@ -206,13 +206,10 @@ int main()
                 }
                 i+=32;
             }
-
-
         }else if(validCommand("create \0",line)){
-
-             if(line[8]==0){
-                 interrupt(0x21,0," bad command!\n\0",0,0);
-                 continue;
+            if(line[8]==0){
+                interrupt(0x21,0," bad command!\n\0",0,0);
+                continue;
             }
             while(line[i+7] != 0xD)
             {
@@ -248,26 +245,27 @@ int main()
                 }
                 buffer[j] = 0x0;
                 interrupt(0x21, 0,"\n\0", 0, 0);
-                  i = 0;
-                  j = 0;
-                  while(buffer[i] != 0)
-                    {
-                        i++;
-                    }
-                  j=div(i,512);
-                  i=mod(i,512);
-                  if(i!=0)
+                i = 0;
+                j = 0;
+                while(buffer[i] != 0)
+                {
+                    i++;
+                }
+                j=div(i,512);
+                i=mod(i,512);
+                if(i!=0)
                     j++;
                 interrupt(0x21, 8, parameter, buffer, j);
             }
-
-        }else if(validCommand("kill \0",line)){
-
+        }else if(validCommand("kill \0",line)){//Kill process
             //handle numbers larger than 8 TODO
-              kill_value=line[5]-'0';
-            interrupt(0x21, 9, parameter, line[5], kill_value);
-        }
-        else{//Unknown command
+            kill_value=line[5]-'0';
+            if(kill_value > 0 && kill_value < 9){
+                interrupt(0x21, 9, parameter, line[5], kill_value);
+            }else{
+                interrupt(0x21,0,"You must enter a number between 1 and 8!\n",0,0);
+            }
+        }else{//Unknown command
             interrupt(0x21,0,"Bad Command!\n",0,0);
         }
     }
