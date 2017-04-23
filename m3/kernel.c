@@ -232,7 +232,7 @@ void terminate()
 {
 	 setKernelDataSegment();
 
-	active[currentProcess]=0;
+	active[currentProcess-1]=0;
 	while(1);
 }
 void killProcess(int processNumber)
