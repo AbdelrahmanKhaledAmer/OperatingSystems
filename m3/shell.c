@@ -32,7 +32,6 @@ int main()
         interrupt(0x21,0,"SHELL>\0",0,0);  //Display prompt
         interrupt(0x21,1,line,0,0);        //Take Input
         interrupt(0x21, 0,"\n\0", 0, 0);
-        //parameter[0]=0x0;
         while(i < 7)
         {
             parameter[i++] = 0x0;
@@ -258,9 +257,9 @@ int main()
                 interrupt(0x21, 8, parameter, buffer, j);
             }
         }else if(validCommand("kill \0",line)){//Kill process
-            //handle numbers larger than 8 TODO
+            //handle numbers larger than 8
             kill_value=line[5]-'0';
-            if(kill_value > 0 && kill_value < 9){
+            if(kill_value > 0 && kill_value < 9&& line[6]==0xD){
                 interrupt(0x21, 9, parameter, line[5], kill_value);
             }else{
                 interrupt(0x21,0,"You must enter a number between 1 and 8!\n",0,0);

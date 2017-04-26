@@ -180,7 +180,6 @@ void readFile(char* fileName, char* buffer)
     }
 	if(i==512)
 	{
-		//printString("\nfile not found!\n\0");
 		not[0]=' ';
 		not[1]='n';
 		not[2]='o';
@@ -193,8 +192,8 @@ void readFile(char* fileName, char* buffer)
 		not[9]='\n';
 		not[10]=0;
 		printString(not);
-		//interrupt(0x10,0xE*256+'\n',0,0,0);
-		//terminate();
+    buffer[0]=0;
+
 	}
 }
 
@@ -205,6 +204,11 @@ void executeProgram(char* name)
         int segment = 0;
 	char buffer[13312];
 	readFile(name,buffer);
+  //if no program found
+  if(buffer[0]==0){
+    return;
+
+  }
     setKernelDataSegment();
 	for(index = 0; index < 8; index++)
    		if(active[index] == 0){
@@ -237,13 +241,11 @@ void terminate()
 }
 void killProcess(int processNumber)
 {
-  //printString("hello\n");
   setKernelDataSegment();
   if(processNumber == currentProcess)
   currentProcess=0;
 	active[processNumber]=0;
   restoreDataSegment();
-//  while(1);
 }
 void deleteFile(char* name)
 {
@@ -269,7 +271,6 @@ void deleteFile(char* name)
 		if (j == 6)
 		{ //file found
 			dir[i] = 0x00;
-		 	//interrupt(0x10,0xE*256+dir[i],0,0,0);
 		 	break;
 		}else{
 		 	i+=31;
@@ -278,7 +279,6 @@ void deleteFile(char* name)
 
 	if(i==512)
 	{
-		//printString("\nfile not found!\n\0");
 		not[0]=' ';
 		not[1]='n';
 		not[2]='o';
@@ -291,8 +291,6 @@ void deleteFile(char* name)
 		not[9]='\n';
 		not[10]=0;
 		printString(not);
-        //interrupt(0x10,0xE*256+'\n',0,0,0);
-		//terminate();
 	}else{
 		i += 6;
 		for(j = 0 ; j < 26 && dir[i + j] != 0x00 ; j++)
@@ -337,7 +335,6 @@ void writeFile(char* name, char* buffer, int secNum)
 	if (i==512)
 	{
 		printString(error);
-		//terminate();
 	}
 
 	entry_name = i;
@@ -352,7 +349,6 @@ void writeFile(char* name, char* buffer, int secNum)
 		if (sectors_num==26)
 		{
 			printString(error);
-		//	terminate();
 		}
 
 		for (i=0; i<512; i++)   // checking if there still emprt sectors in map
@@ -366,7 +362,6 @@ void writeFile(char* name, char* buffer, int secNum)
 		if (i== 512)
 		{
 			printString(error);
-			//terminate();
 		}
 		for( k = j*512 ; k < (j*512) + 512 ; k++) // patrtition of data from buffer
         {
